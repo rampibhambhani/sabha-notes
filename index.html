@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Sabha Notes">
+<meta name="theme-color" content="#B8471F">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>Sabha Notes — Meeting Recorder &amp; Minutes</title>
+<style>
+  :root{
+    --paper:#F3F0E8;
+    --paper-line:#DCD5C4;
+    --ink:#20261F;
+    --ink-soft:#5B6259;
+    --rust:#B8471F;
+    --rust-dark:#8F3616;
+    --leaf:#2F5D45;
+    --leaf-soft:#E4EEE6;
+    --gold:#C0932E;
+    --card:#FFFFFF;
+    --shadow:0 2px 10px rgba(32,38,31,0.08);
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    min-height:100vh;
+    padding-bottom:40px;
+  }
+  .wrap{max-width:640px;margin:0 auto;padding:0 18px;}
+
+  header.top{
+    padding:28px 18px 20px;
+    border-bottom:1px solid var(--paper-line);
+    background:
+      repeating-linear-gradient(180deg, transparent 0 27px, var(--paper-line) 27px 28px);
+    background-size: 100% 28px;
+    background-position: 0 90px;
+  }
+  header.top .inner{max-width:640px;margin:0 auto;}
+  .brand{
+    display:flex;align-items:baseline;gap:10px;
+  }
+  .brand h1{
+    font-family:Georgia,"Times New Roman",serif;
+    font-size:30px;
+    font-weight:700;
+    letter-spacing:-0.02em;
+    margin:0;
+    color:var(--ink);
+  }
+  .brand .devnagari{
+    font-size:19px;
+    color:var(--rust);
+    font-weight:600;
+  }
+  .tagline{
+    margin:6px 0 0;
+    font-size:13.5px;
+    color:var(--ink-soft);
+    letter-spacing:0.01em;
+  }
+
+  .card{
+    background:var(--card);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:20px;
+    margin-top:18px;
+    border:1px solid rgba(32,38,31,0.06);
+  }
+
+  /* language tabs */
+  .lang-tabs{
+    display:flex;
+    gap:0;
+    background:var(--leaf-soft);
+    border-radius:999px;
+    padding:4px;
+    margin-top:18px;
+  }
+  .lang-tab{
+    flex:1;
+    text-align:center;
+    padding:10px 8px;
+    border-radius:999px;
+    border:none;
+    background:transparent;
+    font-size:14.5px;
+    font-weight:600;
+    color:var(--leaf);
+    cursor:pointer;
+    transition:all .15s ease;
+  }
+  .lang-tab.active{
+    background:var(--leaf);
+    color:#fff;
+  }
+  .lang-tab:disabled{opacity:.5;cursor:not-allowed;}
+
+  /* record button */
+  .record-zone{
+    display:flex;flex-direction:column;align-items:center;
+    padding:26px 10px 10px;
+  }
+  .record-btn{
+    width:96px;height:96px;
+    border-radius:50%;
+    border:none;
+    background:var(--rust);
+    box-shadow:0 6px 18px rgba(184,71,31,0.35);
+    cursor:pointer;
+    position:relative;
+    display:flex;align-items:center;justify-content:center;
+    transition:transform .1s ease;
+  }
+  .record-btn:active{transform:scale(0.96);}
+  .record-btn .dot{
+    width:30px;height:30px;background:#fff;border-radius:50%;
+  }
+  .record-btn.recording .dot{
+    border-radius:8px;width:26px;height:26px;
+  }
+  .record-btn.recording{
+    animation:pulse 1.6s infinite;
+  }
+  @keyframes pulse{
+    0%{box-shadow:0 0 0 0 rgba(184,71,31,0.45);}
+    70%{box-shadow:0 0 0 16px rgba(184,71,31,0);}
+    100%{box-shadow:0 0 0 0 rgba(184,71,31,0);}
+  }
+  .timer{
+    margin-top:14px;
+    font-variant-numeric:tabular-nums;
+    font-size:26px;
+    font-weight:700;
+    letter-spacing:0.02em;
+    color:var(--ink);
+    font-family:Georgia,serif;
+  }
+  .status-line{
+    margin-top:4px;
+    font-size:13px;
+    color:var(--ink-soft);
+    text-align:center;
+  }
+
+  .btn-row{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;}
+  .btn{
+    flex:1;
+    min-width:140px;
+    padding:12px 14px;
+    border-radius:10px;
+    border:none;
+    font-size:14.5px;
+    font-weight:600;
+    cursor:pointer;
+    text-align:center;
+  }
+  .btn-primary{background:var(--leaf);color:#fff;}
+  .btn-primary:disabled{background:#B7C6BC;cursor:not-allowed;}
+  .btn-secondary{background:var(--leaf-soft);color:var(--leaf);}
+  .btn-ghost{background:transparent;color:var(--ink-soft);border:1px solid var(--paper-line);}
+
+  /* transcript panel */
+  .transcript-panel{
+    margin-top:18px;
+  }
+  .panel-label{
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    color:var(--ink-soft);
+    font-weight:700;
+    margin-bottom:8px;
+  }
+  .transcript-box{
+    background:repeating-linear-gradient(180deg, var(--card) 0 27px, #F7F5EF 27px 28px);
+    border:1px solid var(--paper-line);
+    border-left:3px solid var(--rust);
+    border-radius:8px;
+    padding:14px 16px;
+    max-height:260px;
+    overflow-y:auto;
+    font-family:"Courier New",monospace;
+    font-size:14px;
+    line-height:28px;
+    color:var(--ink);
+    white-space:pre-wrap;
+  }
+  .transcript-box:empty::before,
+  .transcript-box .placeholder{
+    color:#A7ADA3;
+    font-style:italic;
+  }
+  .seg-tag{
+    display:inline-block;
+    font-family:-apple-system,sans-serif;
+    font-size:10px;
+    font-weight:700;
+    padding:1px 6px;
+    border-radius:4px;
+    margin-right:6px;
+    vertical-align:middle;
+  }
+  .seg-tag.en{background:var(--leaf-soft);color:var(--leaf);}
+  .seg-tag.hi{background:#F4E3C8;color:var(--gold);}
+
+  .mom-box{
+    background:var(--card);
+    border:1px solid var(--paper-line);
+    border-radius:8px;
+    padding:16px 18px;
+    font-size:14.5px;
+    line-height:1.65;
+    color:var(--ink);
+    white-space:pre-wrap;
+  }
+  .mom-box h2, .mom-box h3{font-family:Georgia,serif;}
+
+  .warn{
+    background:#FBF0E4;
+    border:1px solid #EBD3AC;
+    color:#7A4E12;
+    border-radius:10px;
+    padding:12px 14px;
+    font-size:13px;
+    margin-top:16px;
+    line-height:1.5;
+  }
+  .hidden{display:none !important;}
+  .spinner{
+    width:16px;height:16px;border-radius:50%;
+    border:2px solid rgba(255,255,255,0.4);
+    border-top-color:#fff;
+    display:inline-block;
+    animation:spin .7s linear infinite;
+    vertical-align:middle;
+    margin-right:8px;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  footer.foot{
+    text-align:center;
+    color:var(--ink-soft);
+    font-size:12px;
+    margin-top:26px;
+    padding:0 20px;
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="inner">
+    <div class="brand">
+      <h1>Sabha Notes</h1>
+      <span class="devnagari">सभा</span>
+    </div>
+    <p class="tagline">Record in-person meetings with natural English–Hindi mixing. Get AI-drafted Minutes of Meeting, ready for Word.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div id="browserWarning" class="warn hidden">
+    Live transcription needs Chrome on Android (or desktop Chrome). Your browser doesn't support it —
+    you can still record and download the audio, but you'll need to transcribe it elsewhere before generating minutes.
+  </div>
+
+  <div class="card">
+    <div class="panel-label" style="margin-bottom:6px;">Recognition mode</div>
+    <p style="font-size:12.5px;color:var(--ink-soft);margin:0 0 10px;line-height:1.5;">
+      "Mixed" handles natural English–Hindi code-switching best for most meetings. Switch to "Hindi-heavy"
+      only for stretches that are almost entirely in Hindi.
+    </p>
+    <div class="lang-tabs">
+      <button class="lang-tab active" id="tabEn" onclick="setLanguage('en-IN')">Mixed (English + Hindi)</button>
+      <button class="lang-tab" id="tabHi" onclick="setLanguage('hi-IN')">Hindi-heavy</button>
+    </div>
+
+    <div class="record-zone">
+      <button class="record-btn" id="recordBtn" onclick="toggleRecording()">
+        <span class="dot" id="recordDot"></span>
+      </button>
+      <div class="timer" id="timer">00:00</div>
+      <div class="status-line" id="statusLine">Tap to start recording</div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-ghost" id="downloadAudioBtn" onclick="downloadAudio()" disabled>Download audio</button>
+      <button class="btn btn-ghost" id="clearBtn" onclick="clearAll()">Start over</button>
+    </div>
+  </div>
+
+  <div class="card transcript-panel">
+    <div class="panel-label">Live transcript</div>
+    <div class="transcript-box" id="transcriptBox"><span class="placeholder">Your meeting transcript will appear here as you speak…</span></div>
+  </div>
+
+  <div class="card">
+    <button class="btn btn-primary" id="generateBtn" style="width:100%;" onclick="copyPromptForClaude()" disabled>
+      Copy Transcript + Prompt for Claude
+    </button>
+    <p style="font-size:12.5px;color:var(--ink-soft);margin:12px 0 0;line-height:1.5;">
+      This copies your transcript along with ready-made instructions. Paste it into
+      <a href="https://claude.ai" target="_blank" style="color:var(--leaf);font-weight:600;">claude.ai</a>
+      or the Claude app to get your Minutes of Meeting.
+    </p>
+  </div>
+
+  <footer class="foot">
+    Works best in Chrome. Audio and transcript stay on your device — nothing is uploaded anywhere by this page.
+  </footer>
+</div>
+
+<script>
+  // ---------- State ----------
+  let recognition = null;
+  let currentLang = 'en-IN';
+  let isRecording = false;
+  let mediaRecorder = null;
+  let audioChunks = [];
+  let audioBlob = null;
+  let segments = []; // {lang, text}
+  let timerInterval = null;
+  let seconds = 0;
+
+  const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+  if (!SpeechRecognitionAPI) {
+    document.getElementById('browserWarning').classList.remove('hidden');
+  }
+
+  // ---------- Language tabs ----------
+  function setLanguage(lang){
+    currentLang = lang;
+    document.getElementById('tabEn').classList.toggle('active', lang === 'en-IN');
+    document.getElementById('tabHi').classList.toggle('active', lang === 'hi-IN');
+    if (isRecording && SpeechRecognitionAPI) {
+      restartRecognition();
+    }
+  }
+
+  // ---------- Recording ----------
+  async function toggleRecording(){
+    if (!isRecording) {
+      await startRecording();
+    } else {
+      stopRecording();
+    }
+  }
+
+  async function startRecording(){
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+      audioChunks = [];
+      mediaRecorder = new MediaRecorder(stream);
+      mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+      mediaRecorder.onstop = () => {
+        audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        document.getElementById('downloadAudioBtn').disabled = false;
+        stream.getTracks().forEach(t => t.stop());
+      };
+      mediaRecorder.start();
+
+      if (SpeechRecognitionAPI) {
+        startRecognition();
+      }
+
+      isRecording = true;
+      document.getElementById('recordBtn').classList.add('recording');
+      document.getElementById('statusLine').textContent = 'Recording in Mixed mode… switch to Hindi-heavy only if needed';
+      document.getElementById('tabEn').disabled = false;
+      document.getElementById('tabHi').disabled = false;
+      startTimer();
+    } catch (err) {
+      alert('Could not access the microphone. Please allow microphone permission and try again.');
+      console.error(err);
+    }
+  }
+
+  function stopRecording(){
+    isRecording = false;
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+    if (recognition) { recognition.onend = null; recognition.stop(); }
+    document.getElementById('recordBtn').classList.remove('recording');
+    document.getElementById('statusLine').textContent = 'Recording stopped';
+    stopTimer();
+    if (segments.length > 0) {
+      document.getElementById('generateBtn').disabled = false;
+    }
+  }
+
+  function startTimer(){
+    seconds = 0;
+    updateTimerDisplay();
+    timerInterval = setInterval(() => {
+      seconds++;
+      updateTimerDisplay();
+    }, 1000);
+  }
+  function stopTimer(){ clearInterval(timerInterval); }
+  function updateTimerDisplay(){
+    const m = String(Math.floor(seconds / 60)).padStart(2,'0');
+    const s = String(seconds % 60).padStart(2,'0');
+    document.getElementById('timer').textContent = `${m}:${s}`;
+  }
+
+  // ---------- Speech recognition ----------
+  function startRecognition(){
+    recognition = new SpeechRecognitionAPI();
+    recognition.lang = currentLang;
+    recognition.continuous = true;
+    recognition.interimResults = true;
+
+    recognition.onresult = (event) => {
+      let finalText = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        if (event.results[i].isFinal) {
+          finalText += event.results[i][0].transcript;
+        }
+      }
+      if (finalText.trim()) {
+        segments.push({ lang: currentLang, text: finalText.trim() });
+        renderTranscript();
+      }
+    };
+
+    recognition.onerror = (e) => {
+      console.warn('Speech recognition error:', e.error);
+    };
+
+    recognition.onend = () => {
+      // Chrome auto-stops recognition periodically; restart while still recording
+      if (isRecording) {
+        try { recognition.start(); } catch(e) {}
+      }
+    };
+
+    recognition.start();
+  }
+
+  function restartRecognition(){
+    if (recognition) {
+      recognition.onend = null;
+      recognition.stop();
+    }
+    setTimeout(() => { if (isRecording) startRecognition(); }, 250);
+  }
+
+  function renderTranscript(){
+    const box = document.getElementById('transcriptBox');
+    if (segments.length === 0) {
+      box.innerHTML = '<span class="placeholder">Your meeting transcript will appear here as you speak…</span>';
+      return;
+    }
+    box.innerHTML = segments.map(seg => {
+      const tagClass = seg.lang === 'hi-IN' ? 'hi' : 'en';
+      const tagLabel = seg.lang === 'hi-IN' ? 'HINDI-HEAVY' : 'MIXED';
+      return `<div><span class="seg-tag ${tagClass}">${tagLabel}</span>${escapeHtml(seg.text)}</div>`;
+    }).join('');
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function escapeHtml(str){
+    return str.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+
+  // ---------- Clear ----------
+  function clearAll(){
+    if (isRecording) stopRecording();
+    segments = [];
+    audioBlob = null;
+    seconds = 0;
+    updateTimerDisplay();
+    document.getElementById('downloadAudioBtn').disabled = true;
+    document.getElementById('generateBtn').disabled = true;
+    document.getElementById('statusLine').textContent = 'Tap to start recording';
+    renderTranscript();
+  }
+
+  // ---------- Download raw audio ----------
+  function downloadAudio(){
+    if (!audioBlob) return;
+    const url = URL.createObjectURL(audioBlob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `meeting-audio-${dateStamp()}.webm`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // ---------- Copy transcript + prompt, for pasting into Claude ----------
+  function copyPromptForClaude(){
+    const transcriptText = segments.map(seg =>
+      `[${seg.lang === 'hi-IN' ? 'Hindi' : 'English'}] ${seg.text}`
+    ).join('\n');
+
+    const prompt = `You are drafting formal Minutes of Meeting (MoM) from a raw, spoken transcript of an in-person meeting. The transcript may be in English, Hindi, or a mix of both (code-switched). Some words may be mistranscribed since this came from live speech recognition — use context to infer the likely intended meaning.
+
+Write the final Minutes of Meeting ENTIRELY IN ENGLISH, regardless of what language the transcript was in.
+
+Structure the output as plain text with these sections, using clear section headers:
+- Meeting Title (infer a reasonable one if not stated)
+- Date (write "Date: [not stated in recording]" if unknown)
+- Attendees (list names mentioned, or write "Not explicitly stated in recording")
+- Agenda / Topics Discussed
+- Key Discussion Points (concise bullet points)
+- Decisions Made
+- Action Items (bullet list, with owner and due date if mentioned, else "Owner: not specified")
+- Next Steps / Follow-up
+
+Be concise and professional. Do not invent facts not present in the transcript. If a section has no relevant content, write "None noted."
+
+Transcript:
+${transcriptText}`;
+
+    navigator.clipboard.writeText(prompt).then(() => {
+      alert('Copied! Now open Claude and paste this in to get your Minutes of Meeting.');
+    }).catch(() => {
+      alert('Could not copy automatically. Please select and copy the transcript manually.');
+    });
+  }
+
+  function dateStamp(){
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+
+  // ---------- PWA service worker registration ----------
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(err => {
+        console.warn('Service worker registration failed:', err);
+      });
+    });
+  }
+</script>
+
+</body>
+</html>
